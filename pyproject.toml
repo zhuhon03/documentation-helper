@@ -1,0 +1,40 @@
+[project]
+name = "documentation-helper"
+version = "0.0.1"
+requires-python = "~=3.11"
+dependencies = [
+    "beautifulsoup4",
+    "black",
+    "tiktoken",
+    "openai",
+    "unstructured",
+    "nltk",
+    "fastapi",
+    "jinja2",
+    "uvicorn",
+    "streamlit",
+    "streamlit-chat",
+    "tqdm",
+    "isort",
+    "langchainhub",
+    "firecrawl-py",
+    "langchain-community",
+    "langsmith",
+    "pillow",
+    "langchain-tavily",
+    "langchain-pinecone",
+    "certifi",
+    "langchain-chroma",
+    "python-dotenv",
+]
+
+[dependency-groups]
+dev = ["ipykernel"]
+
+[tool.uv]
+package = false
+default-groups = "all"
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
