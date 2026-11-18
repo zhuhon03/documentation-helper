@@ -1,7 +1,7 @@
 [project]
 name = "documentation-helper"
 version = "0.0.1"
-requires-python = "~=3.11"
+requires-python = ">=3.11, <3.12"
 dependencies = [
     "beautifulsoup4",
     "black",
@@ -26,6 +26,7 @@ dependencies = [
     "certifi",
     "langchain-chroma",
     "python-dotenv",
+    "langchain-text-splitters>=1.1.3",
 ]
 
 [dependency-groups]
