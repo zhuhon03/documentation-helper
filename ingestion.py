@@ -13,8 +13,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_tavily import TavilyCrawl, TavilyExtract, TavilyMap
 
-from logger import (Colors, log_error, log_header, log_info, log_success,
-                    log_warning)
+from logger import Colors, log_error, log_header, log_info, log_success, log_warning
 
 load_dotenv()
 
@@ -32,8 +31,8 @@ os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
 embeddings = OpenAIEmbeddings(
     model="text-embedding-3-small",
-    chunk_size=100,          # texts per API request
-    max_retries=10,          # default is low
+    chunk_size=100,  # texts per API request
+    max_retries=10,  # default is low
     retry_min_seconds=5,
     retry_max_seconds=60,
 )
@@ -47,6 +46,7 @@ tavily_extract = TavilyExtract()
 tavily_map = TavilyMap(max_depth=5, max_breadth=20, max_pages=1000)
 tavily_crawl = TavilyCrawl()
 
+
 def chunk_urls(urls: List[str], batch_size: int = 20) -> List[List[str]]:
     """Split URLs into chunks of specified size."""
     chunks = []
@@ -54,6 +54,7 @@ def chunk_urls(urls: List[str], batch_size: int = 20) -> List[List[str]]:
         chunk = urls[i : i + batch_size]
         chunks.append(chunk)
     return chunks
+
 
 async def extract_batch(urls: List[str], batch_num: int) -> List[Dict[str, Any]]:
     """Extract documents from a batch of URLs."""
@@ -77,7 +78,8 @@ async def extract_batch(urls: List[str], batch_num: int) -> List[Dict[str, Any]]
         return docs
     except Exception as e:
         log_error(f"TavilyExtract: Failed to extract batch {batch_num} - {e}")
-        return {'results': []}
+        return {"results": []}
+
 
 async def async_extract(url_batches: List[List[str]]):
     log_header("DOCUMENT EXTRACTION PHASE")
@@ -112,6 +114,7 @@ async def async_extract(url_batches: List[List[str]]):
         log_warning(f"TavilyExtract: {failed_batches} batches failed during extraction")
 
     return all_pages
+
 
 # async def index_documents_async(documents: List[Document], batch_size: int = 50):
 #     """Process documents in batches asynchronously."""
@@ -160,33 +163,42 @@ async def async_extract(url_batches: List[List[str]]):
 
 import hashlib
 
+
 def doc_id(d):  # deterministic → retries/re-runs don't duplicate
     return hashlib.md5(f"{d.metadata['source']}|{d.page_content}".encode()).hexdigest()
 
+
 async def index_documents_async(documents, batch_size=200, concurrency=2):
-    batches = [documents[i:i+batch_size] for i in range(0, len(documents), batch_size)]
+    batches = [
+        documents[i : i + batch_size] for i in range(0, len(documents), batch_size)
+    ]
     sem = asyncio.Semaphore(concurrency)
 
     async def add_batch(batch, n):
         async with sem:
             for attempt in range(5):
                 try:
-                    await vectorstore.aadd_documents(batch, ids=[doc_id(d) for d in batch])
+                    await vectorstore.aadd_documents(
+                        batch, ids=[doc_id(d) for d in batch]
+                    )
                     log_success(f"Batch {n}/{len(batches)} ok")
                     return True
                 except Exception as e:
                     if "429" in str(e) and attempt < 4:
-                        wait = 2 ** attempt * 5
+                        wait = 2**attempt * 5
                         log_warning(f"Batch {n} rate-limited, retry in {wait}s")
                         await asyncio.sleep(wait)
                     else:
                         log_error(f"Batch {n} failed: {e}")
                         return False
 
-    results = await asyncio.gather(*(add_batch(b, i+1) for i, b in enumerate(batches)))
+    results = await asyncio.gather(
+        *(add_batch(b, i + 1) for i, b in enumerate(batches))
+    )
     ok = sum(results)
     log_info(f"Indexed {ok}/{len(batches)} batches")
     return ok == len(batches)
+
 
 async def main():
     """Main async function to orchestrate the entire process."""
@@ -204,7 +216,7 @@ async def main():
     #     'extract_depth':'advanced',
     #     #'instructions':'content on ai agent'
     # })
-    
+
     # results = res.get("results", []) if isinstance(res, dict) else []
     # if not results:
     #     log_error(f"Crawl returned nothing: {res}")
@@ -215,7 +227,7 @@ async def main():
     #     if r.get("raw_content")
     # ]
     # # all_docs = [Document(page_content=result['raw_content'], metadata={'source': result['url']}) for result in res['results']]
-    
+
     # log_success(
     #     f"TavilyCrawl: Successfully crawled {len(all_docs)} URLs from documentation site"
     # )
@@ -263,5 +275,5 @@ async def main():
     log_info(f"   • Chunks created: {len(splitted_docs)}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())
